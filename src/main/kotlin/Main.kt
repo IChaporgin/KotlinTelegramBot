@@ -1,6 +1,7 @@
 package org.example
+import java.io.File
 
 fun main() {
-    println("Hello World!")
-
+    val wordsFile: File = File("words.txt")
+    wordsFile.forEachLine { println(it) }
 }
