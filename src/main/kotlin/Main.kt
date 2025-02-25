@@ -5,10 +5,11 @@ fun main() {
     val wordsFile: File = File("words.txt")
     val dictionary: MutableList<Words> = mutableListOf()
 
-    wordsFile.forEachLine { line -> val words = line.split('|')
+    wordsFile.forEachLine { line ->
+        val words = line.split('|')
         val original = words[0]
         val description = words[1]
-        val countAnswer: Int? = words.getOrNull(2)?.toIntOrNull() ?: 0
+        val countAnswer: Int = words.getOrNull(2)?.toIntOrNull() ?: 0
         dictionary.add(Words(original, description, countAnswer))
     }
 
@@ -18,5 +19,5 @@ fun main() {
 data class Words(
     val original: String,
     val description: String,
-    var correctAnswersCount: Int? = 0
+    val correctAnswersCount: Int = 0
 )
