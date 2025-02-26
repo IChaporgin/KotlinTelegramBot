@@ -3,17 +3,39 @@ import java.io.File
 
 fun main() {
     val wordsFile: File = File("words.txt")
-    val dictionary: MutableList<Words> = mutableListOf()
+    val dictionary = loadDictionary(wordsFile)
 
-    wordsFile.forEachLine { line ->
+    while (true) {
+        println(
+            """
+            Меню:
+            1 - Учить слова
+            2 - Статистика
+            0 - Выход
+        """.trimIndent()
+        )
+
+        val input = readlnOrNull()?.toIntOrNull()
+
+        when (input) {
+            1 -> println("Вы выбрали учить слова")
+            2 -> println("Вы выбрали Статистика")
+            0 -> break
+            else -> println("Введите число 1, 2 или 0")
+        }
+    }
+}
+
+fun loadDictionary(file: File) : MutableList<Words> {
+    val list: MutableList<Words> = mutableListOf()
+    file.forEachLine { line ->
         val words = line.split('|')
         val original = words[0]
         val description = words[1]
         val countAnswer: Int = words.getOrNull(2)?.toIntOrNull() ?: 0
-        dictionary.add(Words(original, description, countAnswer))
+        list.add(Words(original, description, countAnswer))
     }
-
-    dictionary.forEach { println(it) }
+    return list
 }
 
 data class Words(
