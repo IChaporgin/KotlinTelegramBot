@@ -2,8 +2,21 @@ package org.example
 import java.io.File
 
 fun main() {
-    val wordsFile: File = File("words.txt")
-    val dictionary = loadDictionary(wordsFile)
+
+    fun loadDictionary() : List<Words> {
+        val list: MutableList<Words> = mutableListOf()
+        val wordsFile: File = File("words.txt")
+        wordsFile.forEachLine { line ->
+            val words = line.split('|')
+            val original = words[0]
+            val description = words[1]
+            val countAnswer: Int = words.getOrNull(2)?.toIntOrNull() ?: 0
+            list.add(Words(original, description, countAnswer))
+        }
+        return list
+    }
+
+    val dictionary = loadDictionary()
 
     while (true) {
         println(
@@ -24,18 +37,6 @@ fun main() {
             else -> println("Введите число 1, 2 или 0")
         }
     }
-}
-
-fun loadDictionary(file: File) : MutableList<Words> {
-    val list: MutableList<Words> = mutableListOf()
-    file.forEachLine { line ->
-        val words = line.split('|')
-        val original = words[0]
-        val description = words[1]
-        val countAnswer: Int = words.getOrNull(2)?.toIntOrNull() ?: 0
-        list.add(Words(original, description, countAnswer))
-    }
-    return list
 }
 
 data class Words(
