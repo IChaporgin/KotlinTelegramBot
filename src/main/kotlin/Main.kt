@@ -16,6 +16,14 @@ fun main() {
         return list
     }
 
+    fun getStatistic(data: List<Words>) : String {
+        val totalCount = data.count()
+        val learnedCount = data.filter { it.correctAnswersCount >= 3 }
+            .count()
+        val percent = (learnedCount.toDouble() / totalCount.toDouble() * 100.00).toInt()
+        return "Выучено $learnedCount из $totalCount слов | $percent %"
+    }
+
     val dictionary = loadDictionary()
 
     while (true) {
@@ -32,7 +40,10 @@ fun main() {
 
         when (input) {
             1 -> println("Вы выбрали учить слова")
-            2 -> println("Вы выбрали Статистика")
+            2 -> {
+                println(getStatistic(dictionary))
+                readLine()
+            }
             0 -> break
             else -> println("Введите число 1, 2 или 0")
         }
