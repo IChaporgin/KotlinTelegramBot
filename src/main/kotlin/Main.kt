@@ -3,22 +3,9 @@ import java.io.File
 
 fun main() {
 
-    fun loadDictionary() : List<Words> {
-        val list: MutableList<Words> = mutableListOf()
-        val wordsFile: File = File("words.txt")
-        wordsFile.forEachLine { line ->
-            val words = line.split('|')
-            val original = words[0]
-            val description = words[1]
-            val countAnswer: Int = words.getOrNull(2)?.toIntOrNull() ?: 0
-            list.add(Words(original, description, countAnswer))
-        }
-        return list
-    }
-
     fun getStatistic(data: List<Words>) : String {
         val totalCount = data.count()
-        val learnedCount = data.filter { it.correctAnswersCount >= 3 }
+        val learnedCount = data.filter { it.correctAnswersCount >= COUNT_ANSWER }
             .count()
         val percent = (learnedCount.toDouble() / totalCount.toDouble() * 100.00).toInt()
         return "Выучено $learnedCount из $totalCount слов | $percent %"
@@ -39,7 +26,11 @@ fun main() {
         val input = readlnOrNull()?.toIntOrNull()
 
         when (input) {
-            1 -> println("Вы выбрали учить слова")
+            1 -> {
+                println("Вы выбрали учить слова")
+                guessingWords(dictionary)
+                readLine()
+            }
             2 -> {
                 println(getStatistic(dictionary))
                 readLine()
@@ -55,3 +46,35 @@ data class Words(
     val description: String,
     val correctAnswersCount: Int = 0
 )
+
+fun loadDictionary() : List<Words> {
+    val list: MutableList<Words> = mutableListOf()
+    val wordsFile: File = File("words.txt")
+    wordsFile.forEachLine { line ->
+        val words = line.split('|')
+        val original = words[0]
+        val description = words[1]
+        val countAnswer: Int = words.getOrNull(2)?.toIntOrNull() ?: 0
+        list.add(Words(original, description, countAnswer))
+    }
+    return list
+}
+
+fun guessingWords(words: List<Words>) {
+    if (words.isEmpty()) {
+        println("Все слова в словаре выучены")
+    } else {
+        val questionWords = words.filter { it.correctAnswersCount < COUNT_ANSWER }
+            .shuffled()
+            .take(COUNT_QUESTION)
+        val correctAnswer = questionWords.random()
+        println("${correctAnswer.original}:")
+        questionWords.shuffled()
+        questionWords.forEachIndexed { index, word ->
+            println("${index + 1} - ${word.description}")
+        }
+    }
+}
+
+const val COUNT_ANSWER = 3
+const val COUNT_QUESTION = 4

@@ -4,3 +4,7 @@ cat|кошка|4
 home|дом|3
 computer|компьютер|3
 shop|магазин|5
+car|машина|0
+diner|обед|0
+city|город|0
+country|страна|0
