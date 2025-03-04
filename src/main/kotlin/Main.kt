@@ -29,11 +29,9 @@ fun main() {
             1 -> {
                 println("Вы выбрали учить слова")
                 guessingWords(dictionary)
-                readLine()
             }
             2 -> {
                 println(getStatistic(dictionary))
-                readLine()
             }
             0 -> break
             else -> println("Введите число 1, 2 или 0")
@@ -44,7 +42,7 @@ fun main() {
 data class Words(
     val original: String,
     val description: String,
-    val correctAnswersCount: Int = 0
+    var correctAnswersCount: Int = 0
 )
 
 fun loadDictionary() : List<Words> {
@@ -61,19 +59,38 @@ fun loadDictionary() : List<Words> {
 }
 
 fun guessingWords(words: List<Words>) {
-    if (words.isEmpty()) {
-        println("Все слова в словаре выучены")
-    } else {
-        val questionWords = words.filter { it.correctAnswersCount < COUNT_ANSWER }
-            .shuffled()
-            .take(COUNT_QUESTION)
-        val correctAnswer = questionWords.random()
-        println("${correctAnswer.original}:")
-        questionWords.shuffled()
-        questionWords.forEachIndexed { index, word ->
-            println("${index + 1} - ${word.description}")
+    while (true) {
+        if (words.isEmpty()) {
+            println("Все слова в словаре выучены")
+            return
+        } else {
+            val questionWords = words.filter { it.correctAnswersCount < COUNT_ANSWER }
+                .shuffled()
+                .take(COUNT_QUESTION)
+            val correctAnswer = questionWords.random()
+            val correctAnswerId = questionWords.indexOf(correctAnswer)
+            println("${correctAnswer.original}:")
+            questionWords.shuffled()
+            questionWords.forEachIndexed { index, word ->
+                println("${index + 1} - ${word.description}")
+            }
+            println("----------\n0 - Меню")
+            val userAnswerInput = readlnOrNull()?.toIntOrNull() ?: 0
+            if (userAnswerInput == 0) break
+            if (userAnswerInput == correctAnswerId + 1) {
+                println("Правильно!")
+                words.find { it.original == correctAnswer.original }?.correctAnswersCount = correctAnswer.correctAnswersCount + 1
+                saveDictionary(words)
+            } else {
+                println("Не правильно! ${correctAnswer.original} - это ${correctAnswer.description}")
+            }
         }
     }
+}
+
+fun saveDictionary(dictionary: List<Words>) {
+    val file = File("words.txt")
+    file.writeText(dictionary.joinToString("\n") {"${it.original}|${it.description}|${it.correctAnswersCount}"})
 }
 
 const val COUNT_ANSWER = 3
