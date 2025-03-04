@@ -1,9 +1,9 @@
 hello|привет|0
 dog|собака|0
-cat|кошка|4
-home|дом|3
-computer|компьютер|3
-shop|магазин|5
+cat|кошка|0
+home|дом|0
+computer|компьютер|0
+shop|магазин|0
 car|машина|0
 diner|обед|0
 city|город|0
