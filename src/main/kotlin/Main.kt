@@ -1,8 +1,12 @@
 package org.example
 
 fun main() {
-
-    val trainer = LearnWordsTrainer()
+        val trainer = try {
+        LearnWordsTrainer()
+        } catch (e: Exception) {
+            println("Не возможно загрузить словарь")
+            return
+        }
 
     while (true) {
         println(
@@ -14,9 +18,7 @@ fun main() {
         """.trimIndent()
         )
 
-        val input = readlnOrNull()?.toIntOrNull()
-
-        when (input) {
+        when (readlnOrNull()?.toIntOrNull()) {
             1 -> {
                 println("Вы выбрали учить слова")
                 trainer.guessingWords(trainer.dictionary)
