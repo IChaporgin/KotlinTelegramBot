@@ -10,8 +10,6 @@ data class Words(
 
 class LearnWordsTrainer {
     val dictionary = loadDictionary()
-    private val countAnswer = 3
-    private val countQuestion = 4
 
     private fun loadDictionary(): List<Words> {
         val list: MutableList<Words> = mutableListOf()
@@ -32,22 +30,22 @@ class LearnWordsTrainer {
     }
 
     fun guessingWords(words: List<Words>) {
-        val countNotLearnedWords = words.count { it.correctAnswersCount < countAnswer }
+        val countNotLearnedWords = words.count { it.correctAnswersCount < COUNT_ANSWER }
 
         while (true) {
-            val notLearningWords = words.filter { it.correctAnswersCount < countAnswer }
+            val notLearningWords = words.filter { it.correctAnswersCount < COUNT_ANSWER }
             if (notLearningWords.isEmpty()) {
                 println("Все слова в словаре выучены")
                 return
             }
-            val questionWords = if (notLearningWords.count() > countAnswer) {
-                words.filter { it.correctAnswersCount < countAnswer }
+            val questionWords = if (notLearningWords.count() > COUNT_ANSWER) {
+                words.filter { it.correctAnswersCount < COUNT_ANSWER }
                     .shuffled()
-                    .take(countQuestion)
+                    .take(COUNT_QUESTION)
             } else {
-                (notLearningWords + words.filter { it.correctAnswersCount > countAnswer }
+                (notLearningWords + words.filter { it.correctAnswersCount > COUNT_ANSWER }
                     .shuffled()
-                    .take(countQuestion - countNotLearnedWords)
+                    .take(COUNT_QUESTION - countNotLearnedWords)
                 ).shuffled()
             }
 
@@ -55,7 +53,6 @@ class LearnWordsTrainer {
 
             val correctAnswerId = questionWords.indexOf(correctAnswer)
             println("${correctAnswer.original}:")
-//            questionWords.shuffled()
             questionWords.forEachIndexed { index, word ->
                 println("${index + 1} - ${word.description}")
             }
@@ -75,9 +72,12 @@ class LearnWordsTrainer {
 
     fun getStatistic(data: List<Words>): String {
         val totalCount = data.count()
-        val learnedCount = data.filter { it.correctAnswersCount >= countAnswer }
+        val learnedCount = data.filter { it.correctAnswersCount >= COUNT_ANSWER }
             .count()
         val percent = (learnedCount.toDouble() / totalCount.toDouble() * 100.00).toInt()
         return "Выучено $learnedCount из $totalCount слов | $percent %"
     }
 }
+
+private const val COUNT_ANSWER = 3
+private const val COUNT_QUESTION = 4
