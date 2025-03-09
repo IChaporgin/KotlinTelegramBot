@@ -7,14 +7,13 @@ fun main(args: Array<String>) {
     val messages: MutableList<Message> = mutableListOf()
     val botToken = args[0]
     var updateId = 0
+    val updateIdRegex: Regex = "\"update_id\":(.+?),".toRegex()
 
     while (true){
         Thread.sleep(2000)
         val updates: String = getUpdates(botToken, updateId)
         println(updates)
-
-        val updateIdRegex: Regex = "\"update_id\":(.+?),".toRegex()
-        updateId = parsingWithRegex(updates, updateIdRegex)?.toInt()?.plus(1) ?: updateId
+        updateId = parsingWithRegex(updates, updateIdRegex)?.toIntOrNull()?.plus(1) ?: updateId
         if (!updates.contains("update_id")) continue
         messages.add(getData(updates))
         messages.forEach { println("${it.firstName}, ${it.lastName}, ${it.message}") }
