@@ -15,7 +15,7 @@ class TelegramBotService {
     fun getData(updates: String) : Message {
 
         val messageTextRegex: Regex = "\"text\":\"(.+?)\"".toRegex()
-        val message = parsingWithRegex(updates, messageTextRegex) ?: "Нет сообщений"
+        val message = parsingWithRegex(updates, messageTextRegex)?.let { decodeUnicodeString(it) } ?: "Нет сообщений"
 
         val firstNameRegex: Regex = "\"first_name\":\"(.+?)\"".toRegex()
         val firstName = parsingWithRegex(updates, firstNameRegex)
@@ -26,7 +26,7 @@ class TelegramBotService {
         val messageIdRegex: Regex = "\"id\":(.+?),".toRegex()
         val messageId = parsingWithRegex(updates, messageIdRegex)
 
-        return Message(firstName.toString(), lastName.toString(), message.toString(), messageId.toString())
+        return Message(firstName.toString(), lastName.toString(), message, messageId.toString())
     }
 
     fun getUpdates(botToken: String, updateId: Int) : String {
@@ -46,13 +46,18 @@ class TelegramBotService {
     }
 
     fun sendMessage(botToken: String, chatID: String, message: String) : String {
-//        val encodedText = URLEncoder.encode(message, StandardCharsets.UTF_8)
         val url = "https://api.telegram.org/bot$botToken/sendMessage?chat_id=$chatID&text=$message"
-        println(message)
         val client: HttpClient = HttpClient.newBuilder().build()
         val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(url)).build()
         val response= client.send(request, HttpResponse.BodyHandlers.ofString())
 
         return response.body()
+    }
+
+    private fun decodeUnicodeString(unicodeText: String): String {
+        return unicodeText.replace("\\\\u([0-9A-Fa-f]{4})".toRegex()) {
+            val charCode = it.groupValues[1].toInt(16)
+            charCode.toChar().toString()
+        }
     }
 }

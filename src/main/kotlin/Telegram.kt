@@ -1,8 +1,3 @@
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-
 fun main(args: Array<String>) {
     val messages: MutableList<TelegramBotService.Message> = mutableListOf()
     val botToken = args[0]
@@ -17,11 +12,10 @@ fun main(args: Array<String>) {
         updateId = botService.parsingWithRegex(updates, updateIdRegex)?.toIntOrNull()?.plus(1) ?: updateId
         if (!updates.contains("update_id")) continue
         messages.add(botService.getData(updates))
-        messages.forEach { println("${it.messageId} ${it.firstName} ${it.lastName} ${it.message}") }
-//        botService.sendMessage(
-//            botToken,
-//            botService.getData(updates).messageId,
-//            botService.getData(updates).message
-//        )
+        botService.sendMessage(
+            botToken,
+            botService.getData(updates).messageId,
+            botService.getData(updates).message
+        )
     }
 }
