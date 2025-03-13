@@ -2,13 +2,13 @@ package org.example
 
 import java.io.File
 
-data class Words(
-    val original: String,
-    val description: String,
-    var correctAnswersCount: Int = 0
-)
-
 class LearnWordsTrainer {
+    data class Words(
+        val original: String,
+        val description: String,
+        var correctAnswersCount: Int = 0
+    )
+
     val dictionary = loadDictionary()
 
     private fun loadDictionary(): List<Words> {
@@ -46,7 +46,7 @@ class LearnWordsTrainer {
                 (notLearningWords + words.filter { it.correctAnswersCount > COUNT_ANSWER }
                     .shuffled()
                     .take(COUNT_QUESTION - countNotLearnedWords)
-                ).shuffled()
+                        ).shuffled()
             }
 
             val correctAnswer = questionWords.random()

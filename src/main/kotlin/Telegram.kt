@@ -1,58 +1,58 @@
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-
 fun main(args: Array<String>) {
     val messages: MutableList<Message> = mutableListOf()
-    val botToken = args[0]
+    val botService = TelegramBotService(args[0])
     var updateId = 0
-    val updateIdRegex: Regex = "\"update_id\":(.+?),".toRegex()
+    val updateIdText: String = "\"update_id\":(.+?),"
 
-    while (true){
+    while (true) {
         Thread.sleep(2000)
-        val updates: String = getUpdates(botToken, updateId)
+        val updates: String = botService.getUpdates(updateId)
         println(updates)
-        updateId = parsingWithRegex(updates, updateIdRegex)?.toIntOrNull()?.plus(1) ?: updateId
+        updateId = parsingWithRegex(updates, updateIdText)?.toIntOrNull()?.plus(1) ?: updateId
         if (!updates.contains("update_id")) continue
         messages.add(getData(updates))
-        messages.forEach { println("${it.firstName}, ${it.lastName}, ${it.message}") }
-        // Знаю, что тупо так распечатывать в цикле, но это просто для проверки работоспособности :)
+        botService.sendMessage(
+            getData(updates).messageId,
+            getData(updates).message
+        )
     }
 }
 
-fun getData(updates: String) : Message {
+fun getData(updates: String): Message {
 
-    val messageTextRegex: Regex = "\"text\":\"(.+?)\"".toRegex()
-    val text = parsingWithRegex(updates, messageTextRegex)
+    val messageText: String = "\"text\":\"(.+?)\""
+    val message = parsingWithRegex(updates, messageText)?.let { decodeUnicodeString(it) } ?: "Нет сообщений"
 
-    val firstNameRegex: Regex = "\"first_name\":\"(.+?)\"".toRegex()
-    val firstName = parsingWithRegex(updates, firstNameRegex)
+    val firstNameText: String = "\"first_name\":\"(.+?)\""
+    val firstName = parsingWithRegex(updates, firstNameText)
 
-    val lastNameRegex: Regex = "\"last_name\":\"(.+?)\"".toRegex()
-    val lastName = parsingWithRegex(updates, lastNameRegex)
+    val lastNameText: String = "\"last_name\":\"(.+?)\""
+    val lastName = parsingWithRegex(updates, lastNameText)
 
-    return Message(firstName.toString(), lastName.toString(), text.toString())
+    val messageIdText: String = "\"id\":(.+?),"
+    val messageId = parsingWithRegex(updates, messageIdText)
+
+    return Message(firstName.toString(), lastName.toString(), message, messageId.toString())
 }
 
-fun getUpdates(botToken: String, updateId: Int) : String {
-    val urlGetUpdates = "https://api.telegram.org/bot$botToken/getUpdates?offset=$updateId"
-    val client: HttpClient = HttpClient.newBuilder().build()
-    val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build()
-    val response= client.send(request, HttpResponse.BodyHandlers.ofString())
-
-    return response.body()
+fun decodeUnicodeString(unicodeText: String): String {
+    return unicodeText.replace("\\\\u([0-9A-Fa-f]{4})".toRegex()) {
+        val charCode = it.groupValues[1].toInt(16)
+        charCode.toChar().toString()
+    }
 }
 
-fun parsingWithRegex(updates: String, textRegex: Regex) : String? {
+fun parsingWithRegex(updates: String, text: String): String? {
+    val textRegex = text.toRegex()
     val matchResult: MatchResult? = textRegex.find(updates)
     val groups = matchResult?.groups
-    val text = groups?.get(1)?.value
-    return text
+    val textParsing = groups?.get(1)?.value
+    return textParsing
 }
 
-data class Message (
+data class Message(
     val firstName: String,
     val lastName: String,
     val message: String,
+    val messageId: String,
 )
