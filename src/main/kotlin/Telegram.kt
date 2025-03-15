@@ -1,20 +1,35 @@
+import org.example.LearnWordsTrainer
+
 fun main(args: Array<String>) {
     val messages: MutableList<Message> = mutableListOf()
     val botService = TelegramBotService(args[0])
     var updateId = 0
     val updateIdText: String = "\"update_id\":(.+?),"
-
+    val dataRegex = "\"data\":\"(.+?)\"}}]"
+    val trainer = LearnWordsTrainer()
     while (true) {
         Thread.sleep(2000)
         val updates: String = botService.getUpdates(updateId)
-        println(updates)
+        val data = parsingWithRegex(updates, dataRegex)
         updateId = parsingWithRegex(updates, updateIdText)?.toIntOrNull()?.plus(1) ?: updateId
         if (!updates.contains("update_id")) continue
-        messages.add(getData(updates))
-        botService.sendMessage(
-            getData(updates).messageId,
-            getData(updates).message
-        )
+        println(updates)
+        if (decodeUnicodeString(getData(updates).message) == "/start") {
+            botService.sendMenu(getData(updates).chatID)
+        } else {
+            if (updates.contains("callback_data")) {
+                when (data) {
+                    "learning_words" -> botService.sendMessage(getData(updates).chatID, "learning")
+                    "statistics" -> botService.sendMessage(getData(updates).chatID, "Statistic")
+                }
+                continue
+            } else {
+                messages.add(getData(updates))
+                botService.sendMessage(
+                    getData(updates).chatID, getData(updates).message
+                )
+            }
+        }
     }
 }
 
@@ -32,7 +47,10 @@ fun getData(updates: String): Message {
     val messageIdText: String = "\"id\":(.+?),"
     val messageId = parsingWithRegex(updates, messageIdText)
 
-    return Message(firstName.toString(), lastName.toString(), message, messageId.toString())
+    val chatIDRegex: Regex = "\"chat\":\\{\"id\":(\\d+)".toRegex()
+    val chatId = parsingWithRegex(updates, chatIDRegex.toString())
+
+    return Message(firstName.toString(), lastName.toString(), message, messageId.toString(), chatId.toString())
 }
 
 fun decodeUnicodeString(unicodeText: String): String {
@@ -55,4 +73,5 @@ data class Message(
     val lastName: String,
     val message: String,
     val messageId: String,
+    val chatID: String,
 )
