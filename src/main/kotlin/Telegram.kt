@@ -20,7 +20,7 @@ fun main(args: Array<String>) {
             if (updates.contains("callback_data")) {
                 when (data) {
                     "learning_words" -> botService.sendMessage(getData(updates).chatID, "learning")
-                    "statistics" -> botService.sendMessage(getData(updates).chatID, "Statistic")
+                    botService.statisticsClicked -> botService.sendMessage(getData(updates).chatID, trainer.getStatistic(trainer.dictionary))
                 }
                 continue
             } else {
