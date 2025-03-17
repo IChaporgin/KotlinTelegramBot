@@ -12,10 +12,10 @@ value|значение|0
 to be allocated|выделяться|0
 cell|ячейка|0
 computer memory|память компьютера|0
-store|хранить|0
-quantity|количество|0
-to create|создать|0
-the key word|ключевое слово|0
+store|хранить|5
+quantity|количество|5
+to create|создать|5
+the key word|ключевое слово|5
 with a small letter|с маленькой буквы|0
 with a capital letter|с большой буквы (заглавной)|0
 camel case|CamelCase — стиль написания составных слов, где каждое слово внутри фразы пишется с прописной буквы. Частный случай — lowerCamelCase, когда все слова пишутся с прописной буквы, кроме первого.|0

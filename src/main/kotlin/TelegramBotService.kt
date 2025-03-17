@@ -9,6 +9,8 @@ class TelegramBotService(
     private val botToken: String,
 ) {
     private val client: HttpClient = HttpClient.newBuilder().build()
+    val statisticsClicked = "statistics_clicked"
+    val learnClicked = "learn_words_clicked"
 
     fun getUpdates(updateId: Int): String {
         val urlGetUpdates = "$TELEGRAM_URL$botToken/getUpdates?offset=$updateId"
@@ -21,7 +23,6 @@ class TelegramBotService(
     fun sendMessage(chatID: String, message: String): String {
         val encodedMessage = URLEncoder.encode(message, StandardCharsets.UTF_8.toString()) // Кодируем текст
         val url = "$TELEGRAM_URL$botToken/sendMessage?chat_id=$chatID&text=$encodedMessage"
-//        val url = "$TELEGRAM_URL$botToken/sendMessage?chat_id=$chatID&text=$message"
         val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(url)).build()
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
         val responseBody = response.body()
@@ -32,8 +33,6 @@ class TelegramBotService(
 
     fun sendMenu(chatID: String): String {
         val url = "$TELEGRAM_URL$botToken/sendMessage"
-
-        // Корректный JSON для Inline-клавиатуры
         val sendMenuBody = """
         {
           "chat_id": "$chatID",
@@ -43,13 +42,13 @@ class TelegramBotService(
               [
                 {
                   "text": "Изучить слова",
-                  "callback_data": "learning_words"
+                  "callback_data": "$learnClicked"
                 }
               ],
               [
                 {
                   "text": "Статистика",
-                  "callback_data": "statistics"
+                  "callback_data": "$statisticsClicked"
                 }
               ]
             ]
@@ -72,4 +71,5 @@ class TelegramBotService(
     }
 
 }
+
 private const val TELEGRAM_URL = "https://api.telegram.org/bot"
