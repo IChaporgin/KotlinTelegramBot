@@ -1,3 +1,4 @@
+import org.example.COUNT_ANSWER
 import org.example.LearnWordsTrainer
 
 fun main(args: Array<String>) {
@@ -19,8 +20,8 @@ fun main(args: Array<String>) {
         } else {
             if (updates.contains("callback_data")) {
                 when (data) {
-                    "learning_words" -> botService.sendMessage(getData(updates).chatID, "learning")
-                    botService.statisticsClicked -> botService.sendMessage(getData(updates).chatID, trainer.getStatistic(trainer.dictionary))
+                    LEARN_CLICKED -> checkNextQuestionAndSend(LearnWordsTrainer(), botService, getData(updates).chatID.toInt())
+                    STATISTICS_CLICKED -> botService.sendMessage(getData(updates).chatID, trainer.getStatistic(trainer.dictionary))
                 }
                 continue
             } else {
@@ -66,6 +67,21 @@ fun parsingWithRegex(updates: String, text: String): String? {
     val groups = matchResult?.groups
     val textParsing = groups?.get(1)?.value
     return textParsing
+}
+
+fun checkNextQuestionAndSend(
+    trainer: LearnWordsTrainer,
+    telegramBotService: TelegramBotService,
+    chatId: Int
+) {
+    val dictionary = trainer.dictionary
+    val notLearnedWords = dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
+
+    if (notLearnedWords.isEmpty()) {
+        telegramBotService.sendMessage(chatId.toString(), "Все слова в словаре выучены")
+    } else {
+        telegramBotService.sendQuestion(chatId.toString(), dictionary)
+    }
 }
 
 data class Message(
