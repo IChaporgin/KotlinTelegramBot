@@ -1,3 +1,6 @@
+import org.example.COUNT_ANSWER
+import org.example.COUNT_QUESTION
+import org.example.LearnWordsTrainer
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
@@ -9,8 +12,6 @@ class TelegramBotService(
     private val botToken: String,
 ) {
     private val client: HttpClient = HttpClient.newBuilder().build()
-    val statisticsClicked = "statistics_clicked"
-    val learnClicked = "learn_words_clicked"
 
     fun getUpdates(updateId: Int): String {
         val urlGetUpdates = "$TELEGRAM_URL$botToken/getUpdates?offset=$updateId"
@@ -42,13 +43,13 @@ class TelegramBotService(
               [
                 {
                   "text": "Изучить слова",
-                  "callback_data": "$learnClicked"
+                  "callback_data": "$LEARN_CLICKED"
                 }
               ],
               [
                 {
                   "text": "Статистика",
-                  "callback_data": "$statisticsClicked"
+                  "callback_data": "$STATISTICS_CLICKED"
                 }
               ]
             ]
@@ -70,6 +71,59 @@ class TelegramBotService(
 
     }
 
+    fun sendQuestion(chatID: String, dictionary: List<LearnWordsTrainer.Words>): String {
+        val countNotLearnedWords = dictionary.count { it.correctAnswersCount < COUNT_ANSWER }
+        val url = "$TELEGRAM_URL$botToken/sendMessage"
+        val notLearningWords = dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
+        val questionWords = if (notLearningWords.count() > COUNT_ANSWER) {
+            dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
+                .shuffled()
+                .take(COUNT_QUESTION)
+        } else {
+            (notLearningWords + dictionary.filter { it.correctAnswersCount > COUNT_ANSWER }
+                .shuffled()
+                .take(COUNT_QUESTION - countNotLearnedWords)
+                    ).shuffled()
+        }
+        val correctAnswer = questionWords.random()
+        val inlineKeyboard = questionWords
+            .mapIndexed { index, word ->
+                """
+        [
+          {
+            "text": "${index + 1} - ${word.description}",
+            "callback_data": "$CALLBACK_DATA_ANSWER_PREFIX${index + 1}"
+          }
+        ]
+        """
+            }.joinToString(",")
+        val sendQuestionBody = """
+        {
+          "chat_id": "$chatID",
+          "text": "${correctAnswer.original}",
+          "reply_markup": {
+            "inline_keyboard": [
+            $inlineKeyboard
+            ]
+            }
+        }
+    """
+
+        val request: HttpRequest = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Content-Type", "application/json; charset=UTF-8")
+            .POST(HttpRequest.BodyPublishers.ofString(sendQuestionBody, StandardCharsets.UTF_8))
+            .build()
+
+        val response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
+        val responseBody = response.body()
+        println("Response: $responseBody")
+
+        return response.body()
+    }
 }
 
 private const val TELEGRAM_URL = "https://api.telegram.org/bot"
+const val STATISTICS_CLICKED = "statistics_clicked"
+const val LEARN_CLICKED = "learn_words_clicked"
+const val CALLBACK_DATA_ANSWER_PREFIX = "answer_"

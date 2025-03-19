@@ -6,26 +6,26 @@ numerical|числовой|0
 string|строковый|0
 types of data|типы данных|0
 display|отображение|0
-program|программа|0
-assign|присвоить|0
-value|значение|0
-to be allocated|выделяться|0
-cell|ячейка|0
-computer memory|память компьютера|0
+program|программа|9
+assign|присвоить|9
+value|значение|9
+to be allocated|выделяться|9
+cell|ячейка|9
+computer memory|память компьютера|9
 store|хранить|5
 quantity|количество|5
 to create|создать|5
 the key word|ключевое слово|5
-with a small letter|с маленькой буквы|0
-with a capital letter|с большой буквы (заглавной)|0
-camel case|CamelCase — стиль написания составных слов, где каждое слово внутри фразы пишется с прописной буквы. Частный случай — lowerCamelCase, когда все слова пишутся с прописной буквы, кроме первого.|0
-simple|простой|0
-equal sign|знак равенства|0
-assignment operator|оператор присваивания|0
-NumberOfOrders|число заказов — специфичное для CRS свойство, которое отслеживает количество размещенных клиентом заказов|0
-declare|задекларировать|0
-initialize|инициализировать|0
-notification|уведомление|0
-the user|пользователь|0
-double quotes|двойные кавычки|0
-console|консоль|0
+with a small letter|с маленькой буквы|9
+with a capital letter|с большой буквы (заглавной)|9
+camel case|CamelCase — стиль написания составных слов, где каждое слово внутри фразы пишется с прописной буквы. Частный случай — lowerCamelCase, когда все слова пишутся с прописной буквы, кроме первого.|9
+simple|простой|9
+equal sign|знак равенства|9
+assignment operator|оператор присваивания|9
+NumberOfOrders|число заказов — специфичное для CRS свойство, которое отслеживает количество размещенных клиентом заказов|9
+declare|задекларировать|9
+initialize|инициализировать|9
+notification|уведомление|9
+the user|пользователь|9
+double quotes|двойные кавычки|9
+console|консоль|9

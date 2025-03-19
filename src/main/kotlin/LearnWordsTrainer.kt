@@ -79,5 +79,5 @@ class LearnWordsTrainer {
     }
 }
 
-private const val COUNT_ANSWER = 3
-private const val COUNT_QUESTION = 4
+const val COUNT_ANSWER = 3
+const val COUNT_QUESTION = 4
