@@ -10,8 +10,6 @@ class TelegramBotService(
     private val botToken: String,
 ) {
     private val client: HttpClient = HttpClient.newBuilder().build()
-    private val currentWords: Array<LearnWordsTrainer.Words> = arrayOf()
-    private val trainer = LearnWordsTrainer()
 
     fun getUpdates(updateId: Int): String {
         val urlGetUpdates = "$TELEGRAM_URL$botToken/getUpdates?offset=$updateId"
