@@ -8,6 +8,10 @@ class LearnWordsTrainer {
         val description: String,
         var correctAnswersCount: Int = 0
     )
+    data class Question(
+        val question: Words,
+        val answer: List<Words>,
+    )
 
     val dictionary = loadDictionary()
 
@@ -76,6 +80,27 @@ class LearnWordsTrainer {
             .count()
         val percent = (learnedCount.toDouble() / totalCount.toDouble() * 100.00).toInt()
         return "Выучено $learnedCount из $totalCount слов | $percent %"
+    }
+
+    fun question(dictionary: List<Words>) : Question{
+        val countNotLearnedWords = dictionary.count { it.correctAnswersCount < COUNT_ANSWER }
+        val notLearningWords = dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
+        val questionWords = if (notLearningWords.count() > COUNT_ANSWER) {
+            dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
+                .shuffled()
+                .take(COUNT_QUESTION)
+        } else {
+            (notLearningWords + dictionary.filter { it.correctAnswersCount > COUNT_ANSWER }
+                .shuffled()
+                .take(COUNT_QUESTION - countNotLearnedWords)
+                    ).shuffled()
+        }
+        val correctAnswer = questionWords.random()
+        return Question(correctAnswer, questionWords)
+    }
+
+    fun checkAnswer(answerId: Int, question: Question): Boolean {
+        return question.question == question.answer[answerId]
     }
 }
 

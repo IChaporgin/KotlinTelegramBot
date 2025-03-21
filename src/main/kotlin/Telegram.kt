@@ -19,9 +19,31 @@ fun main(args: Array<String>) {
             botService.sendMenu(getData(updates).chatID)
         } else {
             if (updates.contains("callback_data")) {
-                when (data) {
-                    LEARN_CLICKED -> checkNextQuestionAndSend(LearnWordsTrainer(), botService, getData(updates).chatID.toInt())
-                    STATISTICS_CLICKED -> botService.sendMessage(getData(updates).chatID, trainer.getStatistic(trainer.dictionary))
+                val questions = trainer.question(trainer.dictionary)
+                when {
+                    data == LEARN_CLICKED -> checkNextQuestionAndSend(
+                        trainer, botService, getData(updates).chatID.toInt()
+                    )
+
+                    data == STATISTICS_CLICKED -> botService.sendMessage(
+                        getData(updates).chatID, trainer.getStatistic(trainer.dictionary)
+                    )
+
+                    data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true -> {
+                        val answerIndex = data.removePrefix(CALLBACK_DATA_ANSWER_PREFIX)
+                        if (trainer.checkAnswer(answerIndex.toInt(), questions)) {
+                            botService.sendMessage(getData(updates).chatID, "Верно!")
+                            checkNextQuestionAndSend(trainer, botService, getData(updates).chatID.toInt())
+                            println("Индекс = $answerIndex")
+                        } else {
+                            botService.sendMessage(
+                                getData(updates).chatID,
+                                "Не верно: ${questions.question.original} это ${questions.question.description}"
+                            )
+                            println("Индекс при втором варианте = $answerIndex")
+                            checkNextQuestionAndSend(trainer, botService, getData(updates).chatID.toInt())
+                        }
+                    }
                 }
                 continue
             } else {
@@ -72,7 +94,7 @@ fun parsingWithRegex(updates: String, text: String): String? {
 fun checkNextQuestionAndSend(
     trainer: LearnWordsTrainer,
     telegramBotService: TelegramBotService,
-    chatId: Int
+    chatId: Int,
 ) {
     val dictionary = trainer.dictionary
     val notLearnedWords = dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
@@ -80,7 +102,7 @@ fun checkNextQuestionAndSend(
     if (notLearnedWords.isEmpty()) {
         telegramBotService.sendMessage(chatId.toString(), "Все слова в словаре выучены")
     } else {
-        telegramBotService.sendQuestion(chatId.toString(), dictionary)
+        telegramBotService.sendQuestion(chatId.toString(), trainer.question(dictionary))
     }
 }
 
