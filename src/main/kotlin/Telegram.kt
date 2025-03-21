@@ -15,20 +15,43 @@ fun main(args: Array<String>) {
         updateId = parsingWithRegex(updates, updateIdText)?.toIntOrNull()?.plus(1) ?: updateId
         if (!updates.contains("update_id")) continue
         println(updates)
+        val question = trainer.question(trainer.dictionary)
         if (decodeUnicodeString(getData(updates).message) == "/start") {
             botService.sendMenu(getData(updates).chatID)
         } else {
             if (updates.contains("callback_data")) {
-                when (data) {
-                    LEARN_CLICKED -> checkNextQuestionAndSend(LearnWordsTrainer(), botService, getData(updates).chatID.toInt())
-                    STATISTICS_CLICKED -> botService.sendMessage(getData(updates).chatID, trainer.getStatistic(trainer.dictionary))
+                when {
+                    data == LEARN_CLICKED -> checkNextQuestionAndSend(
+                        trainer, botService, getData(updates).chatID.toInt()
+                    )
+
+                    data == STATISTICS_CLICKED -> botService.sendMessage(
+                        getData(updates).chatID, trainer.getStatistic(trainer.dictionary)
+                    )
+
+                    data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true -> {
+                        val answerIndex = data.removePrefix(CALLBACK_DATA_ANSWER_PREFIX)
+                        if (trainer.checkAnswer(answerIndex.toInt(), question)) {
+                            botService.sendMessage(getData(updates).chatID, "Верно!")
+                            checkNextQuestionAndSend(trainer, botService, getData(updates).chatID.toInt())
+                            println("Индекс = $answerIndex")
+                        } else {
+                            botService.sendMessage(
+                                getData(updates).chatID,
+                                "Не верно: ${question.question.original} это ${question.question.description}"
+                            )
+                            println("Индекс при втором варианте = $answerIndex")
+                            checkNextQuestionAndSend(trainer, botService, getData(updates).chatID.toInt())
+                        }
+                    }
                 }
                 continue
-            } else {
-                messages.add(getData(updates))
-                botService.sendMessage(
-                    getData(updates).chatID, getData(updates).message
-                )
+//                Временно оставляю эту часть кода
+//            } else {
+//                messages.add(getData(updates))
+//                botService.sendMessage(
+//                    getData(updates).chatID, getData(updates).message
+//                )
             }
         }
     }
@@ -69,18 +92,14 @@ fun parsingWithRegex(updates: String, text: String): String? {
     return textParsing
 }
 
-fun checkNextQuestionAndSend(
-    trainer: LearnWordsTrainer,
-    telegramBotService: TelegramBotService,
-    chatId: Int
-) {
+fun checkNextQuestionAndSend(trainer: LearnWordsTrainer, telegramBotService: TelegramBotService, chatId: Int) {
     val dictionary = trainer.dictionary
     val notLearnedWords = dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
 
     if (notLearnedWords.isEmpty()) {
         telegramBotService.sendMessage(chatId.toString(), "Все слова в словаре выучены")
     } else {
-        telegramBotService.sendQuestion(chatId.toString(), dictionary)
+        telegramBotService.sendQuestion(chatId.toString(), trainer.question(trainer.dictionary))
     }
 }
 

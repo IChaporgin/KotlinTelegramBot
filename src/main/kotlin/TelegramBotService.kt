@@ -1,5 +1,3 @@
-import org.example.COUNT_ANSWER
-import org.example.COUNT_QUESTION
 import org.example.LearnWordsTrainer
 import java.net.URI
 import java.net.URLEncoder
@@ -12,6 +10,8 @@ class TelegramBotService(
     private val botToken: String,
 ) {
     private val client: HttpClient = HttpClient.newBuilder().build()
+    private val currentWords: Array<LearnWordsTrainer.Words> = arrayOf()
+    private val trainer = LearnWordsTrainer()
 
     fun getUpdates(updateId: Int): String {
         val urlGetUpdates = "$TELEGRAM_URL$botToken/getUpdates?offset=$updateId"
@@ -71,22 +71,9 @@ class TelegramBotService(
 
     }
 
-    fun sendQuestion(chatID: String, dictionary: List<LearnWordsTrainer.Words>): String {
-        val countNotLearnedWords = dictionary.count { it.correctAnswersCount < COUNT_ANSWER }
+    fun sendQuestion(chatID: String, words: LearnWordsTrainer.Question): String {
         val url = "$TELEGRAM_URL$botToken/sendMessage"
-        val notLearningWords = dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
-        val questionWords = if (notLearningWords.count() > COUNT_ANSWER) {
-            dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
-                .shuffled()
-                .take(COUNT_QUESTION)
-        } else {
-            (notLearningWords + dictionary.filter { it.correctAnswersCount > COUNT_ANSWER }
-                .shuffled()
-                .take(COUNT_QUESTION - countNotLearnedWords)
-                    ).shuffled()
-        }
-        val correctAnswer = questionWords.random()
-        val inlineKeyboard = questionWords
+        val inlineKeyboard = words.answer
             .mapIndexed { index, word ->
                 """
         [
@@ -100,7 +87,7 @@ class TelegramBotService(
         val sendQuestionBody = """
         {
           "chat_id": "$chatID",
-          "text": "${correctAnswer.original}",
+          "text": "${words.question.original}",
           "reply_markup": {
             "inline_keyboard": [
             $inlineKeyboard
