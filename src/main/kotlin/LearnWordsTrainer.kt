@@ -14,7 +14,6 @@ class LearnWordsTrainer {
     )
 
     val dictionary = loadDictionary()
-    var questingWord: Words? = null
 
     private fun loadDictionary(): List<Words> {
         val list: MutableList<Words> = mutableListOf()
@@ -83,7 +82,8 @@ class LearnWordsTrainer {
         return "Выучено $learnedCount из $totalCount слов | $percent %"
     }
 
-    fun question(dictionary: List<Words>) : Question{
+    fun question() : Question{
+        val dictionary = dictionary
         val countNotLearnedWords = dictionary.count { it.correctAnswersCount < COUNT_ANSWER }
         val notLearningWords = dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
         val questionWords = if (notLearningWords.count() > COUNT_ANSWER) {
