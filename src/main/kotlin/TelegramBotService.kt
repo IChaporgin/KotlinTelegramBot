@@ -1,3 +1,4 @@
+
 import org.example.LearnWordsTrainer
 import java.net.URI
 import java.net.URLEncoder

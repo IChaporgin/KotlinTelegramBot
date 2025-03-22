@@ -82,7 +82,8 @@ class LearnWordsTrainer {
         return "Выучено $learnedCount из $totalCount слов | $percent %"
     }
 
-    fun question(dictionary: List<Words>) : Question{
+    fun question() : Question{
+        val dictionary = dictionary
         val countNotLearnedWords = dictionary.count { it.correctAnswersCount < COUNT_ANSWER }
         val notLearningWords = dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
         val questionWords = if (notLearningWords.count() > COUNT_ANSWER) {
@@ -100,7 +101,7 @@ class LearnWordsTrainer {
     }
 
     fun checkAnswer(answerId: Int, question: Question): Boolean {
-        return question.question == question.answer[answerId]
+        return question.question == question.answer[answerId - 1]
     }
 }
 
