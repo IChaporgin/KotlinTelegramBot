@@ -8,6 +8,8 @@ fun main(args: Array<String>) {
     val updateIdText: String = "\"update_id\":(.+?),"
     val dataRegex = "\"data\":\"(.+?)\"}}]"
     val trainer = LearnWordsTrainer()
+    val currentQuestions = mutableMapOf<String, LearnWordsTrainer.Question>()
+
     while (true) {
         Thread.sleep(2000)
         val updates: String = botService.getUpdates(updateId)
@@ -15,27 +17,48 @@ fun main(args: Array<String>) {
         updateId = parsingWithRegex(updates, updateIdText)?.toIntOrNull()?.plus(1) ?: updateId
         if (!updates.contains("update_id")) continue
         println(updates)
+
+        val chatId = getData(updates).chatID
+
         if (decodeUnicodeString(getData(updates).message) == "/start") {
-            botService.sendMenu(getData(updates).chatID)
+            botService.sendMenu(chatId)
         } else {
             if (updates.contains("callback_data")) {
-                when (data) {
-                    LEARN_CLICKED -> checkNextQuestionAndSend(LearnWordsTrainer(), botService, getData(updates).chatID.toInt())
-                    STATISTICS_CLICKED -> botService.sendMessage(getData(updates).chatID, trainer.getStatistic(trainer.dictionary))
+                when {
+                    data == LEARN_CLICKED -> {
+                        val question = trainer.question()
+                        currentQuestions[chatId] = question
+                        checkNextQuestionAndSend(trainer, botService, chatId.toInt(), question)
+                    }
+                    data == STATISTICS_CLICKED -> botService.sendMessage(
+                        chatId, trainer.getStatistic(trainer.dictionary)
+                    )
+                    data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true -> {
+                        val question = currentQuestions[chatId] ?: return
+                        val answerIndex = data.removePrefix(CALLBACK_DATA_ANSWER_PREFIX)
+                        if (trainer.checkAnswer(answerIndex.toInt(), question)) {
+                            botService.sendMessage(chatId, "Верно!")
+                        } else {
+                            botService.sendMessage(
+                                chatId,
+                                "Не верно: ${question.question.original} это ${question.question.description}"
+                            )
+                        }
+                        val newQuestion = trainer.question()
+                        currentQuestions[chatId] = newQuestion
+                        checkNextQuestionAndSend(trainer, botService, chatId.toInt(), newQuestion)
+                    }
                 }
                 continue
             } else {
                 messages.add(getData(updates))
-                botService.sendMessage(
-                    getData(updates).chatID, getData(updates).message
-                )
+                botService.sendMessage(chatId, getData(updates).message)
             }
         }
     }
 }
 
 fun getData(updates: String): Message {
-
     val messageText: String = "\"text\":\"(.+?)\""
     val message = parsingWithRegex(updates, messageText)?.let { decodeUnicodeString(it) } ?: "Нет сообщений"
 
@@ -72,7 +95,8 @@ fun parsingWithRegex(updates: String, text: String): String? {
 fun checkNextQuestionAndSend(
     trainer: LearnWordsTrainer,
     telegramBotService: TelegramBotService,
-    chatId: Int
+    chatId: Int,
+    question: LearnWordsTrainer.Question
 ) {
     val dictionary = trainer.dictionary
     val notLearnedWords = dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
@@ -80,7 +104,7 @@ fun checkNextQuestionAndSend(
     if (notLearnedWords.isEmpty()) {
         telegramBotService.sendMessage(chatId.toString(), "Все слова в словаре выучены")
     } else {
-        telegramBotService.sendQuestion(chatId.toString(), dictionary)
+        telegramBotService.sendQuestion(chatId.toString(), question)
     }
 }
 

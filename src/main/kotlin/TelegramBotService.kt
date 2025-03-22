@@ -1,5 +1,4 @@
-import org.example.COUNT_ANSWER
-import org.example.COUNT_QUESTION
+
 import org.example.LearnWordsTrainer
 import java.net.URI
 import java.net.URLEncoder
@@ -71,22 +70,9 @@ class TelegramBotService(
 
     }
 
-    fun sendQuestion(chatID: String, dictionary: List<LearnWordsTrainer.Words>): String {
-        val countNotLearnedWords = dictionary.count { it.correctAnswersCount < COUNT_ANSWER }
+    fun sendQuestion(chatID: String, question: LearnWordsTrainer.Question): String {
         val url = "$TELEGRAM_URL$botToken/sendMessage"
-        val notLearningWords = dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
-        val questionWords = if (notLearningWords.count() > COUNT_ANSWER) {
-            dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
-                .shuffled()
-                .take(COUNT_QUESTION)
-        } else {
-            (notLearningWords + dictionary.filter { it.correctAnswersCount > COUNT_ANSWER }
-                .shuffled()
-                .take(COUNT_QUESTION - countNotLearnedWords)
-                    ).shuffled()
-        }
-        val correctAnswer = questionWords.random()
-        val inlineKeyboard = questionWords
+        val inlineKeyboard = question.answer
             .mapIndexed { index, word ->
                 """
         [
@@ -100,7 +86,7 @@ class TelegramBotService(
         val sendQuestionBody = """
         {
           "chat_id": "$chatID",
-          "text": "${correctAnswer.original}",
+          "text": "${question.question.original}",
           "reply_markup": {
             "inline_keyboard": [
             $inlineKeyboard
