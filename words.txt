@@ -14,7 +14,7 @@ cell|ячейка|0
 computer memory|память компьютера|0
 store|хранить|0
 quantity|количество|0
-to create|создать|5
+to create|создать|0
 the key word|ключевое слово|0
 with a small letter|с маленькой буквы|0
 with a capital letter|с большой буквы (заглавной)|0
