@@ -1,4 +1,3 @@
-
 import org.example.LearnWordsTrainer
 import java.net.URI
 import java.net.URLEncoder
@@ -70,9 +69,9 @@ class TelegramBotService(
 
     }
 
-    fun sendQuestion(chatID: String, question: LearnWordsTrainer.Question): String {
+    fun sendQuestion(chatID: String, words: LearnWordsTrainer.Question): String {
         val url = "$TELEGRAM_URL$botToken/sendMessage"
-        val inlineKeyboard = question.answer
+        val inlineKeyboard = words.answer
             .mapIndexed { index, word ->
                 """
         [
@@ -86,7 +85,7 @@ class TelegramBotService(
         val sendQuestionBody = """
         {
           "chat_id": "$chatID",
-          "text": "${question.question.original}",
+          "text": "${words.question.original}",
           "reply_markup": {
             "inline_keyboard": [
             $inlineKeyboard

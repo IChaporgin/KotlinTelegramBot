@@ -101,7 +101,8 @@ class LearnWordsTrainer {
     }
 
     fun checkAnswer(answerId: Int, question: Question): Boolean {
-        return question.question == question.answer[answerId - 1]
+        val selectedAnswer = question.answer.getOrNull(answerId - 1) ?: return false
+        return selectedAnswer.original == question.question.original
     }
 }
 
