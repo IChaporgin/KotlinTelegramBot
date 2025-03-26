@@ -28,7 +28,7 @@ fun main(args: Array<String>) {
                     data == LEARN_CLICKED -> {
                         val question = trainer.question()
                         currentQuestions[chatId] = question
-                        checkNextQuestionAndSend(trainer, botService, chatId.toInt(), question)
+                        checkNextQuestionAndSend(trainer, botService, chatId, question)
                     }
                     data == STATISTICS_CLICKED -> botService.sendMessage(
                         chatId, trainer.getStatistic(trainer.dictionary)
@@ -46,7 +46,7 @@ fun main(args: Array<String>) {
                         }
                         val newQuestion = trainer.question()
                         currentQuestions[chatId] = newQuestion
-                        checkNextQuestionAndSend(trainer, botService, chatId.toInt(), newQuestion)
+                        checkNextQuestionAndSend(trainer, botService, chatId, newQuestion)
                     }
                 }
                 continue
@@ -71,7 +71,7 @@ fun getData(updates: String): Message {
     val messageIdText: String = "\"id\":(.+?),"
     val messageId = parsingWithRegex(updates, messageIdText)
 
-    val chatIDRegex: Regex = "\"chat\":\\{\"id\":(\\d+)".toRegex()
+    val chatIDRegex: Regex = "\"chat\":\\{\"id\":(-*\\d+)".toRegex()
     val chatId = parsingWithRegex(updates, chatIDRegex.toString())
 
     return Message(firstName.toString(), lastName.toString(), message, messageId.toString(), chatId.toString())
@@ -95,7 +95,7 @@ fun parsingWithRegex(updates: String, text: String): String? {
 fun checkNextQuestionAndSend(
     trainer: LearnWordsTrainer,
     telegramBotService: TelegramBotService,
-    chatId: Int,
+    chatId: String,
     question: LearnWordsTrainer.Question
 ) {
     val dictionary = trainer.dictionary
