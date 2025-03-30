@@ -1,117 +1,143 @@
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import org.example.COUNT_ANSWER
 import org.example.LearnWordsTrainer
 
+@Serializable
+data class Update(
+    @SerialName("update_id")
+    val updateId: Long,
+    @SerialName("message")
+    val message: Message? = null,
+    @SerialName("callback_query")
+    val callbackQuery: CallbackQuery? = null,
+)
+
+@Serializable
+data class Response(
+    @SerialName("result")
+    val result: List<Update>,
+)
+
+@Serializable
+data class Message(
+    @SerialName("text")
+    val text: String,
+    @SerialName("chat")
+    val chat: Chat,
+)
+
+@Serializable
+data class CallbackQuery(
+    @SerialName("data")
+    val data: String? = null,
+    @SerialName("message")
+    val message: Message? = null,
+)
+
+@Serializable
+data class Chat(
+    @SerialName("id")
+    val id: Long,
+)
+
+@Serializable
+data class SendMessageRequest(
+    @SerialName("chat_id")
+    val chatId: Long?,
+    @SerialName("text")
+    val text: String,
+    @SerialName("reply_markup")
+    val replyMarkup: ReplyMarkup,
+)
+
+@Serializable
+data class ReplyMarkup(
+    @SerialName("inline_keyboard")
+    val inlineKeyboard: List<List<InlineKeyboard>>
+)
+
+@Serializable
+data class InlineKeyboard(
+    @SerialName("text")
+    val text: String,
+    @SerialName("callback_data")
+    val callbackData: String,
+)
+
 fun main(args: Array<String>) {
-    val messages: MutableList<Message> = mutableListOf()
+
     val botService = TelegramBotService(args[0])
-    var updateId = 0
-    val updateIdText: String = "\"update_id\":(.+?),"
-    val dataRegex = "\"data\":\"(.+?)\"}}]"
+    var lastUpdatesId = 0L
     val trainer = LearnWordsTrainer()
-    val currentQuestions = mutableMapOf<String, LearnWordsTrainer.Question>()
+    val currentQuestions = mutableMapOf<Long, LearnWordsTrainer.Question>()
+    val json = Json {
+        ignoreUnknownKeys = true
+    }
 
     while (true) {
         Thread.sleep(2000)
-        val updates: String = botService.getUpdates(updateId)
-        val data = parsingWithRegex(updates, dataRegex)
-        updateId = parsingWithRegex(updates, updateIdText)?.toIntOrNull()?.plus(1) ?: updateId
-        if (!updates.contains("update_id")) continue
-        println(updates)
+        val responseString: String = botService.getUpdates(lastUpdatesId)
+        val response: Response = json.decodeFromString(responseString)
+        val updates = response.result
+        val firstUpdate = updates.firstOrNull() ?: continue
+        val updateId = firstUpdate.updateId
+        lastUpdatesId = updateId + 1
+        val message = firstUpdate.message?.text
+        val data = firstUpdate.callbackQuery?.data
+        val chatId = firstUpdate.message?.chat?.id ?: firstUpdate.callbackQuery?.message?.chat?.id ?: 0
 
-        val chatId = getData(updates).chatID
+        println(response)
 
-        if (decodeUnicodeString(getData(updates).message) == "/start") {
-            botService.sendMenu(chatId)
+        if (message?.lowercase() == "/start") {
+            botService.sendMenu(json, chatId)
         } else {
-            if (updates.contains("callback_data")) {
-                when {
-                    data == LEARN_CLICKED -> {
-                        val question = trainer.question()
-                        currentQuestions[chatId] = question
-                        checkNextQuestionAndSend(trainer, botService, chatId, question)
-                    }
-                    data == STATISTICS_CLICKED -> botService.sendMessage(
-                        chatId, trainer.getStatistic(trainer.dictionary)
-                    )
-                    data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true -> {
-                        val question = currentQuestions[chatId] ?: return
-                        val answerIndex = data.removePrefix(CALLBACK_DATA_ANSWER_PREFIX)
-                        if (trainer.checkAnswer(answerIndex.toInt(), question)) {
-                            botService.sendMessage(chatId, "Верно!")
-                        } else {
-                            botService.sendMessage(
-                                chatId,
-                                "Не верно: ${question.question.original} это ${question.question.description}"
-                            )
-                        }
-                        val newQuestion = trainer.question()
-                        currentQuestions[chatId] = newQuestion
-                        checkNextQuestionAndSend(trainer, botService, chatId, newQuestion)
-                    }
+            println(data)
+            when {
+                data == LEARN_CLICKED -> {
+                    val question = trainer.question()
+                    currentQuestions[chatId] = question
+                    checkNextQuestionAndSend(trainer, botService, chatId, question)
                 }
-                continue
-            } else {
-                messages.add(getData(updates))
-                botService.sendMessage(chatId, getData(updates).message)
+
+                data == STATISTICS_CLICKED -> botService.sendMessage(
+                    chatId, trainer.getStatistic(trainer.dictionary)
+                )
+
+                data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true -> {
+                    val question = currentQuestions[chatId] ?: return
+                    val answerIndex = data.removePrefix(CALLBACK_DATA_ANSWER_PREFIX)
+                    if (trainer.checkAnswer(answerIndex.toInt(), question)) {
+                        botService.sendMessage(chatId, "Верно!")
+                    } else {
+                        botService.sendMessage(
+                            chatId,
+                            "Не верно: ${question.question.original} это ${question.question.description}"
+                        )
+                    }
+                    val newQuestion = trainer.question()
+                    currentQuestions[chatId] = newQuestion
+                    checkNextQuestionAndSend(trainer, botService, chatId, newQuestion)
+                }
             }
+            continue
         }
     }
-}
-
-fun getData(updates: String): Message {
-    val messageText: String = "\"text\":\"(.+?)\""
-    val message = parsingWithRegex(updates, messageText)?.let { decodeUnicodeString(it) } ?: "Нет сообщений"
-
-    val firstNameText: String = "\"first_name\":\"(.+?)\""
-    val firstName = parsingWithRegex(updates, firstNameText)
-
-    val lastNameText: String = "\"last_name\":\"(.+?)\""
-    val lastName = parsingWithRegex(updates, lastNameText)
-
-    val messageIdText: String = "\"id\":(.+?),"
-    val messageId = parsingWithRegex(updates, messageIdText)
-
-    val chatIDRegex: Regex = "\"chat\":\\{\"id\":(-*\\d+)".toRegex()
-    val chatId = parsingWithRegex(updates, chatIDRegex.toString())
-
-    return Message(firstName.toString(), lastName.toString(), message, messageId.toString(), chatId.toString())
-}
-
-fun decodeUnicodeString(unicodeText: String): String {
-    return unicodeText.replace("\\\\u([0-9A-Fa-f]{4})".toRegex()) {
-        val charCode = it.groupValues[1].toInt(16)
-        charCode.toChar().toString()
-    }
-}
-
-fun parsingWithRegex(updates: String, text: String): String? {
-    val textRegex = text.toRegex()
-    val matchResult: MatchResult? = textRegex.find(updates)
-    val groups = matchResult?.groups
-    val textParsing = groups?.get(1)?.value
-    return textParsing
 }
 
 fun checkNextQuestionAndSend(
     trainer: LearnWordsTrainer,
     telegramBotService: TelegramBotService,
-    chatId: String,
+    chatId: Long?,
     question: LearnWordsTrainer.Question
 ) {
     val dictionary = trainer.dictionary
     val notLearnedWords = dictionary.filter { it.correctAnswersCount < COUNT_ANSWER }
 
     if (notLearnedWords.isEmpty()) {
-        telegramBotService.sendMessage(chatId.toString(), "Все слова в словаре выучены")
+        telegramBotService.sendMessage(chatId, "Все слова в словаре выучены")
     } else {
-        telegramBotService.sendQuestion(chatId.toString(), question)
+        telegramBotService.sendQuestion(Json, chatId, question)
     }
 }
-
-data class Message(
-    val firstName: String,
-    val lastName: String,
-    val message: String,
-    val messageId: String,
-    val chatID: String,
-)
