@@ -70,7 +70,6 @@ fun main(args: Array<String>) {
     val trainers = HashMap<Long, LearnWordsTrainer>()
     val botService = TelegramBotService(args[0])
     var lastUpdatesId = 0L
-    val trainer = LearnWordsTrainer()
     val json = Json {
         ignoreUnknownKeys = true
     }
@@ -82,7 +81,7 @@ fun main(args: Array<String>) {
         val response: Response = json.decodeFromString(responseString)
         if (response.result.isEmpty()) continue
         val sortedUpdates = response.result.sortedBy { it.updateId }
-        sortedUpdates.forEach { handleUpdate(it, json, botService, trainer, currentQuestions, trainers) }
+        sortedUpdates.forEach { handleUpdate(it, json, botService, currentQuestions, trainers) }
         lastUpdatesId = sortedUpdates.last().updateId + 1
         val updates = response.result
         val firstUpdate = updates.firstOrNull() ?: continue
@@ -113,32 +112,33 @@ fun handleUpdate(
     update: Update,
     json: Json,
     botService: TelegramBotService,
-//    trainer: LearnWordsTrainer,
     currentQuestions: MutableMap<Long, LearnWordsTrainer.Question>,
     trainers: MutableMap<Long, LearnWordsTrainer>,
 ) {
     val message = update.message?.text
     val data = update.callbackQuery?.data
     val chatId = update.message?.chat?.id ?: update.callbackQuery?.message?.chat?.id ?: return
-    val trainer = trainers.getOrPut(chatId) { LearnWordsTrainer("$chatId.txt") }
-    val question = trainer.question()
+    val trainers = trainers.getOrPut(chatId) { LearnWordsTrainer("$chatId.txt") }
+    val question = trainers.question()
 
 
-    if (message?.lowercase() == "/start") { botService.sendMenu(json, chatId) }
+    if (message?.lowercase() == "/start") {
+        botService.sendMenu(json, chatId)
+    }
 
     if (data == LEARN_CLICKED) {
         currentQuestions[chatId] = question
-        checkNextQuestionAndSend(trainer, botService, chatId, question)
+        checkNextQuestionAndSend(trainers, botService, chatId, question)
     }
 
     if (data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
         val question = currentQuestions[chatId] ?: return
         val answerIndex = data.removePrefix(CALLBACK_DATA_ANSWER_PREFIX).toInt()
 
-        if (trainer.checkAnswer(answerIndex, question)) {
-            val correctWord = trainer.dictionary.find { it.original == question.question.original }
+        if (trainers.checkAnswer(answerIndex, question)) {
+            val correctWord = trainers.dictionary.find { it.original == question.question.original }
             correctWord?.correctAnswersCount = (correctWord?.correctAnswersCount ?: 0) + 1
-            trainer.saveDictionary(trainer.dictionary, "$chatId.txt")
+            trainers.saveDictionary(trainers.dictionary, "$chatId.txt")
             botService.sendMessage(chatId, "Верно!")
         } else {
             botService.sendMessage(
@@ -147,11 +147,16 @@ fun handleUpdate(
             )
         }
 
-        val newQuestion = trainer.question()
+        val newQuestion = trainers.question()
         currentQuestions[chatId] = newQuestion // Сохраняем новый вопрос
-        checkNextQuestionAndSend(trainer, botService, chatId, newQuestion)
+        checkNextQuestionAndSend(trainers, botService, chatId, newQuestion)
     }
     if (data == STATISTICS_CLICKED) {
-        botService.sendMessage(chatId, trainer.getStatistic())
+        botService.sendMessage(chatId, trainers.getStatistic(trainers.dictionary))
+    }
+    if (data == RESET_STATISTIC) {
+        botService.sendMessage(chatId, "Статистика сброшена")
+        trainers.dictionary.forEach { it.correctAnswersCount = 0 }
+        trainers.saveDictionary(trainers.dictionary, "$chatId.txt")
     }
 }
