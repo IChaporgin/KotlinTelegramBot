@@ -24,8 +24,8 @@ equal sign|знак равенства|0
 assignment operator|оператор присваивания|0
 NumberOfOrders|число заказов — специфичное для CRS свойство, которое отслеживает количество размещенных клиентом заказов|0
 declare|задекларировать|0
-initialize|инициализировать|9
-notification|уведомление|9
-the user|пользователь|9
-double quotes|двойные кавычки|9
-console|консоль|9
+initialize|инициализировать|0
+notification|уведомление|0
+the user|пользователь|0
+double quotes|двойные кавычки|0
+console|консоль|0

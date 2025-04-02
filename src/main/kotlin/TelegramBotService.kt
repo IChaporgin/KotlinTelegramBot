@@ -39,9 +39,8 @@ class TelegramBotService(
             replyMarkup = ReplyMarkup(
                 listOf(
                     listOf(InlineKeyboard(text = "Изучить слова", callbackData = LEARN_CLICKED)),
-                    listOf(
-                        InlineKeyboard(text = "Статистика", callbackData = STATISTICS_CLICKED)
-                    )
+                    listOf(InlineKeyboard(text = "Статистика", callbackData = STATISTICS_CLICKED)),
+                    listOf(InlineKeyboard(text = "Сбросить статистику", callbackData = RESET_STATISTIC))
                 )
             )
         )
@@ -53,13 +52,11 @@ class TelegramBotService(
             .header("Content-Type", "application/json; charset=UTF-8")
             .POST(HttpRequest.BodyPublishers.ofString(sendMenuRequest, StandardCharsets.UTF_8))
             .build()
-
         val response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
         val responseBody = response.body()
         println("Response: $responseBody")
 
         return response.body()
-
     }
 
     fun sendQuestion(json: Json, chatId: Long?, words: LearnWordsTrainer.Question): String {
@@ -89,4 +86,5 @@ class TelegramBotService(
 private const val TELEGRAM_URL = "https://api.telegram.org/bot"
 const val STATISTICS_CLICKED = "statistics_clicked"
 const val LEARN_CLICKED = "learn_words_clicked"
+const val RESET_STATISTIC = "reset_clicked"
 const val CALLBACK_DATA_ANSWER_PREFIX = "answer_"
