@@ -3,6 +3,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.COUNT_ANSWER
 import org.example.LearnWordsTrainer
+import java.io.IOException
 
 @Serializable
 data class Update(
@@ -68,27 +69,35 @@ data class InlineKeyboard(
 
 fun main(args: Array<String>) {
     val trainers = HashMap<Long, LearnWordsTrainer>()
-    val botService = TelegramBotService(args[0])
+    var botService = TelegramBotService(args[0])
     var lastUpdatesId = 0L
     val json = Json {
         ignoreUnknownKeys = true
     }
     val currentQuestions = mutableMapOf<Long, LearnWordsTrainer.Question>()
 
+
     while (true) {
-        Thread.sleep(2000)
-        val responseString: String = botService.getUpdates(lastUpdatesId)
-        val response: Response = json.decodeFromString(responseString)
-        if (response.result.isEmpty()) continue
-        val sortedUpdates = response.result.sortedBy { it.updateId }
-        sortedUpdates.forEach { handleUpdate(it, json, botService, currentQuestions, trainers) }
-        lastUpdatesId = sortedUpdates.last().updateId + 1
-        val updates = response.result
-        val firstUpdate = updates.firstOrNull() ?: continue
-        val updateId = firstUpdate.updateId
-        lastUpdatesId = updateId + 1
-        println("Response: $response")
-        println("Update: $updates")
+        try {
+            Thread.sleep(2000)
+            val responseString: String = botService.getUpdates(lastUpdatesId)
+            val response: Response = json.decodeFromString(responseString)
+            if (response.result.isEmpty()) continue
+            val sortedUpdates = response.result.sortedBy { it.updateId }
+            val newUpdates = sortedUpdates.filter { it.updateId >= lastUpdatesId }
+            newUpdates.forEach { handleUpdate(it, json, botService, currentQuestions, trainers) }
+            if (newUpdates.isNotEmpty()) {
+                lastUpdatesId = newUpdates.last().updateId + 1
+            }
+//            sortedUpdates.forEach { handleUpdate(it, json, botService, currentQuestions, trainers) }
+//            lastUpdatesId = sortedUpdates.last().updateId + 1
+            println("Response: $response")
+        } catch (e: IOException) {
+            println("Ошибка сети: ${e.message}. Переподключение...")
+            botService = TelegramBotService(args[0]) // Создаем новое подключение
+        } catch (e: Exception) {
+            println("Неизвестная ошибка: ${e.message}")
+        }
     }
 }
 
@@ -118,8 +127,8 @@ fun handleUpdate(
     val message = update.message?.text
     val data = update.callbackQuery?.data
     val chatId = update.message?.chat?.id ?: update.callbackQuery?.message?.chat?.id ?: return
-    val trainers = trainers.getOrPut(chatId) { LearnWordsTrainer("$chatId.txt") }
-    val question = trainers.question()
+    val trainer = trainers.getOrPut(chatId) { LearnWordsTrainer("$chatId.txt") }
+    val question = trainer.question()
 
 
     if (message?.lowercase() == "/start") {
@@ -128,17 +137,17 @@ fun handleUpdate(
 
     if (data == LEARN_CLICKED) {
         currentQuestions[chatId] = question
-        checkNextQuestionAndSend(trainers, botService, chatId, question)
+        checkNextQuestionAndSend(trainer, botService, chatId, question)
     }
 
     if (data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
         val question = currentQuestions[chatId] ?: return
         val answerIndex = data.removePrefix(CALLBACK_DATA_ANSWER_PREFIX).toInt()
 
-        if (trainers.checkAnswer(answerIndex, question)) {
-            val correctWord = trainers.dictionary.find { it.original == question.question.original }
+        if (trainer.checkAnswer(answerIndex, question)) {
+            val correctWord = trainer.dictionary.find { it.original == question.question.original }
             correctWord?.correctAnswersCount = (correctWord?.correctAnswersCount ?: 0) + 1
-            trainers.saveDictionary(trainers.dictionary, "$chatId.txt")
+            trainer.saveDictionary(trainer.dictionary, "$chatId.txt")
             botService.sendMessage(chatId, "Верно!")
         } else {
             botService.sendMessage(
@@ -147,16 +156,18 @@ fun handleUpdate(
             )
         }
 
-        val newQuestion = trainers.question()
-        currentQuestions[chatId] = newQuestion // Сохраняем новый вопрос
-        checkNextQuestionAndSend(trainers, botService, chatId, newQuestion)
+        val newQuestion = trainer.question()
+        if (currentQuestions[chatId]?.question?.original != newQuestion.question.original) {
+            currentQuestions[chatId] = newQuestion
+            checkNextQuestionAndSend(trainer, botService, chatId, newQuestion)
+        }
     }
     if (data == STATISTICS_CLICKED) {
-        botService.sendMessage(chatId, trainers.getStatistic(trainers.dictionary))
+        botService.sendMessage(chatId, trainer.getStatistic(trainer.dictionary))
     }
     if (data == RESET_STATISTIC) {
         botService.sendMessage(chatId, "Статистика сброшена")
-        trainers.dictionary.forEach { it.correctAnswersCount = 0 }
-        trainers.saveDictionary(trainers.dictionary, "$chatId.txt")
+        trainer.dictionary.forEach { it.correctAnswersCount = 0 }
+        trainer.saveDictionary(trainer.dictionary, "$chatId.txt")
     }
 }
